@@ -1,0 +1,151 @@
+[
+  {
+    "name": "RainbowShader",
+    "description": "Shader that makes a rainbow ring effect. Ported from shadertoy. Origin: https://www.shadertoy.com/view/WtG3RD",
+    "file": "glowing_rainbow_ring",
+    "properties": [
+      {
+        "type": "float",
+        "name": "radius",
+        "displayName": "Radius",
+        "defaultValue": [0.2]
+      }
+    ]
+  },
+  {
+    "name": "Three lines into one",
+    "description": "Three lines interpolating into one",
+    "file": "three_lines_into_one",
+    "properties": [
+      {
+        "type": "float",
+        "name": "radius",
+        "displayName": "Radius",
+        "defaultValue": [0.2]
+      },
+      {
+        "type": "float",
+        "name": "thickness",
+        "displayName": "Thickness",
+        "defaultValue": [0.3]
+      },
+      {
+        "type": "float",
+        "name": "waveWidth",
+        "displayName": "Wave Width",
+        "defaultValue": [0.5]
+      },
+      {
+        "type": "color",
+        "name": "color_0",
+        "displayName": "Color 1",
+        "defaultValue": [0.809, 0.682, 0.789]
+      },
+      {
+        "type": "color",
+        "name": "color_1",
+        "displayName": "Color 2",
+        "defaultValue": [0.5, 0.6, 0.4]
+      },
+      {
+        "type": "color",
+        "name": "color_2",
+        "displayName": "Color 3",
+        "defaultValue": [0.234, 0.1234, 0.7543]
+      }
+    ]
+  },
+  {
+    "name": "Circle Glow Shader",
+    "description": "Simple ring with outer glow effect",
+    "file": "simple_ring_with_glow",
+    "properties": [
+      {
+        "type": "float",
+        "name": "radius",
+        "displayName": "Radius",
+        "defaultValue": [0.2]
+      },
+      {
+        "type": "float",
+        "name": "thickness",
+        "displayName": "Thickness",
+        "defaultValue": [0.1]
+      },
+      {
+        "type": "color",
+        "name": "color",
+        "displayName": "Color",
+        "defaultValue": [0.5, 0.6, 0.4]
+      }
+    ]
+  },
+  {
+    "name": "Three lines shader",
+    "description": "Three lines with different colors and slight deform",
+    "file": "three_lines",
+    "properties": [
+      {
+        "type": "float",
+        "name": "radius",
+        "displayName": "Radius",
+        "defaultValue": [0.6]
+      },
+      {
+        "type": "float",
+        "name": "thickness",
+        "displayName": "Thickness",
+        "defaultValue": [0.6]
+      },
+      {
+        "type": "color",
+        "name": "color_0",
+        "displayName": "Color 1",
+        "defaultValue": [0.8432, 0.232, 0.2534]
+      },
+      {
+        "type": "color",
+        "name": "color_1",
+        "displayName": "Color 2",
+        "defaultValue": [0.2421, 0.9242, 0.1234]
+      },
+      {
+        "type": "color",
+        "name": "color_2",
+        "displayName": "Color 3",
+        "defaultValue": [0.1543, 0.312,0.9454]
+      }
+    ]
+  },
+  {
+    "name": "Moving spiral",
+    "description": "Spiral with moving effect",
+    "file": "moving_spiral",
+    "properties": [
+      {
+        "type": "float",
+        "name": "radius",
+        "displayName": "Radius",
+        "defaultValue": [0.5]
+      },
+      {
+        "type": "color",
+        "name": "color_0",
+        "displayName": "From color",
+        "defaultValue": [0.943, 0.843, 0.841]
+      },
+      {
+        "type": "color",
+        "name": "color_1",
+        "displayName": "To color",
+        "defaultValue": [0.5432, 0.4342, 0.5123]
+      }
+    ]
+  },
+  {
+    "name": "Empty Shader (!)",
+    "description": "This shader does nothing. It's just a template for you to start with.",
+    "file": "empty_shader_template",
+    "properties": []
+  }
+]

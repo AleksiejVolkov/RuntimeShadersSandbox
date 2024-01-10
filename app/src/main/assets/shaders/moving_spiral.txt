@@ -1,0 +1,75 @@
+//necessary for the shader to work:
+uniform float2 resolution; // Viewport resolution (px)
+uniform shader image;
+uniform float time;
+
+//custom uniforms:
+uniform float3 color_0;
+uniform float3 color_1;
+uniform float radius;
+//end of custom uniforms
+
+//helper functions:
+vec2 normalizeUv(float2 fragCoord) {
+    vec2 uv = fragCoord/resolution.xy - .5;
+    return vec2(uv.x * resolution.x/resolution.y, uv.y);
+}
+
+half4 mergeImageAndShader(float2 fragCoord, vec4 col, vec4 background) {
+    return half4(mix(background.rgb, col.rgb, col.a),col.a);
+}
+//end of helper functions
+
+float getCircle(vec2 uv, float radius) {
+    return smoothstep(radius,radius-0.003,length(uv));
+}
+
+float getStroke(vec2 uv, float radius, float width) {
+    return getCircle(uv, radius)-getCircle(uv,radius*width);
+}
+
+float circleSdf(vec2 samplePosition, float radius){
+    return smoothstep(radius, 0., length(samplePosition));
+}
+
+mat2 rotationMatrix(float theta) {
+    float c = cos(theta);
+    float s = sin(theta);
+    return mat2(c, -s, s, c);
+}
+
+half4 main(float2 fragCoord) {
+    vec2 uv = normalizeUv(fragCoord); // get normalized uv coordinates
+
+    uv /= 0.3+radius*0.5;
+    float scaledTime = time*0.01;
+    mat2 rot = rotationMatrix(-scaledTime);
+
+    vec2 rotatedUv = uv*rot;
+
+    float spiralRadius = length(rotatedUv);
+    float angle = atan(rotatedUv.y, rotatedUv.x);
+
+    // Parameters for the spiral
+    float numTurns = 4.; // Number of turns in the spiral
+    float spiralWidth = 0.05 + 0.3*(.2); // Width of the spiral bands
+
+    // Create the spiral pattern
+    float spiral = cos(numTurns * angle - spiralRadius * (250.+50.0*sin(scaledTime)*0.)) * 0.5;
+
+    // Use smoothstep for a smoother spiral
+    float smoothSpiral = smoothstep(spiralWidth, spiralWidth + .5, spiral);
+
+    float circle = getCircle(rotatedUv, 0.44);
+    float circle2 = getCircle(rotatedUv, 0.06*(pow(sin(scaledTime),5.))+0.32);
+
+    smoothSpiral *= (circle-circle2);
+
+    float3 interpolatedColor = mix(color_0.rgb, color_1.rgb, smoothstep(0.2,1.,length(uv)*2.));
+
+    float3 color = smoothSpiral*interpolatedColor;
+
+    vec4 col = vec4(color, smoothSpiral);
+
+    return mergeImageAndShader(fragCoord, col, vec4(image.eval(fragCoord)));
+}
