@@ -1,11 +1,13 @@
-package com.offmind.ringshaders.ui
+package com.offmind.ringshaders.ui.views
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.net.Uri
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,17 +18,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,12 +36,8 @@ import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.offmind.ringshaders.R
 import com.offmind.ringshaders.domain.LoadedShader
-import com.offmind.ringshaders.presenter.ScreenState
 import com.offmind.ringshaders.model.ShaderProperty
-import com.offmind.ringshaders.model.ShaderProperty.ColorProperty
-import com.offmind.ringshaders.presenter.UserEvent
-import com.offmind.ringshaders.presenter.availableShadersList
-import com.offmind.ringshaders.ui.utils.ProduceDrawLoopCounter
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -84,7 +80,7 @@ fun ShaderOptions(
                         onPropertyChanged.invoke(key, listOf(value))
                     }
                 }
-                if (it is ColorProperty) {
+                if (it is ShaderProperty.ColorProperty) {
                     ColorPropertyChooser(displayName = it.displayName,
                         propertyName = it.name,
                         currentValue = listOf(it.valueA, it.valueB, it.valueC),
@@ -135,38 +131,6 @@ fun ShadersDropdown(
     }
 }
 
-@Composable
-fun ShadedLoadingIndicator(
-    modifier: Modifier, shader: RuntimeShader, shaderProperties: List<ShaderProperty>
-) {
-    shaderProperties.forEach {
-        shader.applyProperty(it)
-    }
-
-    val time = ProduceDrawLoopCounter(10f).asFloatState()
-    shader.setFloatUniform("time", time.floatValue)
-
-    Box(modifier = Modifier
-        .onSizeChanged { size ->
-            shader.setFloatUniform(
-                "resolution", size.width.toFloat(), size.height.toFloat()
-            )
-        }
-        .graphicsLayer {
-            this.renderEffect = RenderEffect
-                .createRuntimeShaderEffect(
-                    shader, "image"
-                )
-                .asComposeRenderEffect()
-        }) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = Color.Black)
-        )
-    }
-}
-
 fun RuntimeShader.applyProperty(shaderProperty: ShaderProperty) {
     when (shaderProperty) {
         is ShaderProperty.FloatProperty -> {
@@ -183,7 +147,7 @@ fun RuntimeShader.applyProperty(shaderProperty: ShaderProperty) {
             )
         }
 
-        is ColorProperty -> {
+        is ShaderProperty.ColorProperty -> {
             this.setFloatUniform(
                 shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB, shaderProperty.valueC
             )
@@ -196,6 +160,15 @@ fun RuntimeShader.applyProperty(shaderProperty: ShaderProperty) {
                 shaderProperty.valueB,
                 shaderProperty.valueC,
                 shaderProperty.valueD
+            )
+        }
+
+        is ShaderProperty.ImageProperty -> {
+            this.setInputShader(shaderProperty.name, ImageShader(shaderProperty.image, TileMode.Decal, TileMode.Decal))
+            this.setFloatUniform(
+                "${shaderProperty.name}_resolution",
+                shaderProperty.image.width.toFloat(),
+                shaderProperty.image.height.toFloat()
             )
         }
     }
@@ -298,64 +271,6 @@ fun ColorPropertyChooser(
 }
 
 @Composable
-fun CardWithShader(
-    modifier: Modifier,
-    state: ScreenState,
-    onUserEvent: (UserEvent) -> Unit,
-) {
-    ElevatedCard(
-        modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                 .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(modifier = Modifier.padding(horizontal = 8.dp), text = state.shader?.name ?: "", fontSize = 19.sp)
-            ShadersDropdown(shadersList = availableShadersList) {
-                onUserEvent.invoke(UserEvent.OnSelectNewShader(it))
-            }
-        }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 7.dp)
-                .clipToBounds(),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(R.drawable.bg),
-                contentDescription = "",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop,
-                colorFilter = ColorFilter.tint(
-                    Color.Black.copy(alpha = state.backgroundDim), BlendMode.Darken
-                )
-            )
-            state.compiledShader?.let {
-                ShadedLoadingIndicator(
-                    modifier = Modifier.fillMaxSize(), shader = it, shaderProperties = state.shaderProperties
-                )
-            }
-            Box(
-                modifier = Modifier.size(150.dp), contentAlignment = Alignment.Center
-            ) {
-                Text("Loading", color = Color.White, fontWeight = FontWeight.W400, fontSize = 20.sp)
-            }
-        }
-        TextWithLinks(
-            modifier = Modifier.padding(10.dp), text = state.shader?.description ?: ""
-        )
-    }
-}
-
-@Composable
 fun TextWithLinks(
     modifier: Modifier, text: String
 ) {
@@ -399,4 +314,3 @@ fun TextWithLinks(
         }
     })
 }
-

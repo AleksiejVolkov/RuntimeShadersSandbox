@@ -1,7 +1,7 @@
 package com.offmind.ringshaders.utils
 
 import android.content.Context
-import com.offmind.ringshaders.domain.RawShaderProperty
+import com.offmind.ringshaders.domain.LoadImageBitmapUseCase
 import com.offmind.ringshaders.model.ShaderProperty
 import java.io.IOException
 import java.nio.charset.Charset
@@ -29,44 +29,15 @@ fun loadFromAsset(context: Context, fileName: String): String? {
     return json
 }
 
-fun List<RawShaderProperty>.toShaderProperties(): List<ShaderProperty> {
+
+suspend fun List<RawShaderProperty>.toShaderProperties(loadImageBitmapUseCase: LoadImageBitmapUseCase): List<ShaderProperty> {
     return this.map {
         when (it.type) {
             "float" -> {
                 ShaderProperty.FloatProperty(
                     displayName = it.displayName,
                     name = it.name,
-                    value = it.defaultValue.first()
-                )
-            }
-
-            "float2" -> {
-                ShaderProperty.Float2Property(
-                    displayName = it.displayName,
-                    name = it.name,
-                    valueA = it.defaultValue[0],
-                    valueB = it.defaultValue[1]
-                )
-            }
-
-            "float3" -> {
-                ShaderProperty.Float3Property(
-                    displayName = it.displayName,
-                    name = it.name,
-                    valueA = it.defaultValue[0],
-                    valueB = it.defaultValue[1],
-                    valueC = it.defaultValue[2]
-                )
-            }
-
-            "float4" -> {
-                ShaderProperty.Float4Property(
-                    displayName = it.displayName,
-                    name = it.name,
-                    valueA = it.defaultValue[0],
-                    valueB = it.defaultValue[1],
-                    valueC = it.defaultValue[2],
-                    valueD = it.defaultValue[3]
+                    value = (it.defaultValue as DefaultValue.FloatValue).value
                 )
             }
 
@@ -74,9 +45,17 @@ fun List<RawShaderProperty>.toShaderProperties(): List<ShaderProperty> {
                 ShaderProperty.ColorProperty(
                     displayName = it.displayName,
                     name = it.name,
-                    valueA = it.defaultValue[0],
-                    valueB = it.defaultValue[1],
-                    valueC = it.defaultValue[2]
+                    valueA = (it.defaultValue as DefaultValue.ColorValue).value[0],
+                    valueB = (it.defaultValue as DefaultValue.ColorValue).value[1],
+                    valueC = (it.defaultValue as DefaultValue.ColorValue).value[2]
+                )
+            }
+
+            "image" -> {
+                ShaderProperty.ImageProperty(
+                    displayName = it.displayName,
+                    name = it.name,
+                    image = loadImageBitmapUseCase.execute((it.defaultValue as DefaultValue.StringValue).value)!!
                 )
             }
 

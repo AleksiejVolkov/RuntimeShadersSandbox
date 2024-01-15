@@ -4,7 +4,7 @@ uniform shader image;
 uniform float time;
 
 //custom uniforms:
-
+uniform shader image2;
 //end of custom uniforms
 
 //helper functions:
@@ -25,7 +25,8 @@ half4 main(float2 fragCoord) {
     vec2 uv = normalizeUv(fragCoord); // get normalized uv coordinates
 
     float scaledTime = time * 0.01;
-    vec4 col = vec4(0.,0.,0.,0.); // initialize the color to black with alpha 0
+    //float imageSize = image2.
+    vec4 col = vec4(image2.eval(fragCoord/2.0)); // initialize the color to black with alpha 0
 
     return mergeImageAndShader(fragCoord, col, vec4(image.eval(fragCoord))); // return the final color
 }

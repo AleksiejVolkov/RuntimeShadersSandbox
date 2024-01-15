@@ -1,5 +1,18 @@
 [
   {
+    "name": "Foggy Ring",
+    "description": "Simple ring with foggy effect",
+    "file": "foggy_ring",
+    "properties": [
+      {
+        "type": "float",
+        "name": "radius",
+        "displayName": "Radius",
+        "defaultValue": 0.2
+      }
+    ]
+  },
+  {
     "name": "RainbowShader",
     "description": "Shader that makes a rainbow ring effect. Ported from shadertoy. Origin: https://www.shadertoy.com/view/WtG3RD",
     "file": "glowing_rainbow_ring",
