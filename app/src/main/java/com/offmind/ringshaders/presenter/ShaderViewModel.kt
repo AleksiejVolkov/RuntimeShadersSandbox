@@ -1,7 +1,5 @@
 package com.offmind.ringshaders.presenter
 
-import android.graphics.RuntimeShader
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.offmind.ringshaders.domain.LoadImageBitmapUseCase
@@ -9,7 +7,8 @@ import com.offmind.ringshaders.domain.LoadShaderCodeUseCase
 import com.offmind.ringshaders.domain.LoadShadersListUseCase
 import com.offmind.ringshaders.domain.LoadedShader
 import com.offmind.ringshaders.model.ShaderProperty
-import com.offmind.ringshaders.repository.audio.AudioToTextureProcessor
+import com.offmind.ringshaders.presenter.data.ScreenState
+import com.offmind.ringshaders.presenter.data.UserEvent
 import com.offmind.ringshaders.utils.toShaderProperties
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,11 +25,11 @@ class ShaderViewModel(
 
     init {
         viewModelScope.launch {
-            val shaders = loadShadersListUseCase.execute()
-            availableShadersList.clear()
-            availableShadersList.addAll(shaders)
-            availableShadersList.firstOrNull()?.let {
-                loadNewShader(it)
+            loadShadersListUseCase.execute().let {
+                if (it.isNotEmpty()) {
+                    _screenState.emit(screenState.value.copy(shaderList = it))
+                    loadNewShader(it.first())
+                }
             }
         }
     }
@@ -116,20 +115,4 @@ class ShaderViewModel(
     }
 }
 
-data class ScreenState(
-    val isExpanded: Boolean = false,
-    val isLoading: Boolean = true,
-    val shader: LoadedShader? = null,
-    val compiledShader: RuntimeShader? = null,
-    val shaderProperties: List<ShaderProperty> = emptyList(),
-    val backgroundDim: Float = 0.5f
-)
 
-sealed class UserEvent {
-    class OnChangeBackgroundDim(val newValue: Float) : UserEvent()
-    class OnSelectNewShader(val newShader: LoadedShader) : UserEvent()
-    class OnShaderPropertyChanged(val key: String, val newValue: List<Float>) : UserEvent()
-    object OnClickExpand : UserEvent()
-}
-
-val availableShadersList = mutableListOf<LoadedShader>()

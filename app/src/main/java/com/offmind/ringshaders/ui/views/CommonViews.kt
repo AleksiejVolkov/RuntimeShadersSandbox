@@ -2,7 +2,6 @@ package com.offmind.ringshaders.ui.views
 
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.RuntimeShader
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -19,12 +18,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.ImageShader
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
@@ -34,10 +29,10 @@ import androidx.compose.ui.window.Dialog
 import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-import com.offmind.ringshaders.R
 import com.offmind.ringshaders.domain.LoadedShader
 import com.offmind.ringshaders.model.ShaderProperty
-
+import com.offmind.ringshaders.presenter.data.ScreenState
+import com.offmind.ringshaders.presenter.data.UserEvent
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -62,11 +57,25 @@ fun BackgroundDimSlider(
 
 @Composable
 fun ShaderOptions(
-    modifier: Modifier, properties: List<ShaderProperty>, onPropertyChanged: (String, List<Float>) -> Unit
+    modifier: Modifier,
+    state: ScreenState,
+    onUserEvent: (UserEvent) -> Unit,
+    properties: List<ShaderProperty>,
+    onPropertyChanged: (String, List<Float>) -> Unit
 ) {
     LazyColumn(
         modifier = modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(15.dp)
     ) {
+        item {
+            BackgroundDimSlider(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                value = state.backgroundDim,
+                changeBackgroundDim = {
+                    onUserEvent.invoke(UserEvent.OnChangeBackgroundDim(it))
+                }
+            )
+        }
         properties.forEach {
             item {
                 if (it is ShaderProperty.FloatProperty) {
@@ -127,49 +136,6 @@ fun ShadersDropdown(
                     )
                 })
             }
-        }
-    }
-}
-
-fun RuntimeShader.applyProperty(shaderProperty: ShaderProperty) {
-    when (shaderProperty) {
-        is ShaderProperty.FloatProperty -> {
-            this.setFloatUniform(shaderProperty.name, shaderProperty.value)
-        }
-
-        is ShaderProperty.Float2Property -> {
-            this.setFloatUniform(shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB)
-        }
-
-        is ShaderProperty.Float3Property -> {
-            this.setFloatUniform(
-                shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB, shaderProperty.valueC
-            )
-        }
-
-        is ShaderProperty.ColorProperty -> {
-            this.setFloatUniform(
-                shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB, shaderProperty.valueC
-            )
-        }
-
-        is ShaderProperty.Float4Property -> {
-            this.setFloatUniform(
-                shaderProperty.name,
-                shaderProperty.valueA,
-                shaderProperty.valueB,
-                shaderProperty.valueC,
-                shaderProperty.valueD
-            )
-        }
-
-        is ShaderProperty.ImageProperty -> {
-            this.setInputShader(shaderProperty.name, ImageShader(shaderProperty.image, TileMode.Decal, TileMode.Decal))
-            this.setFloatUniform(
-                "${shaderProperty.name}_resolution",
-                shaderProperty.image.width.toFloat(),
-                shaderProperty.image.height.toFloat()
-            )
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.offmind.ringshaders.utils
 
 import android.content.Context
+import android.graphics.RuntimeShader
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.TileMode
 import com.offmind.ringshaders.domain.LoadImageBitmapUseCase
 import com.offmind.ringshaders.model.ShaderProperty
 import java.io.IOException
@@ -60,6 +63,49 @@ suspend fun List<RawShaderProperty>.toShaderProperties(loadImageBitmapUseCase: L
             }
 
             else -> throw IllegalArgumentException("Unknown shader property type")
+        }
+    }
+}
+
+fun RuntimeShader.applyProperty(shaderProperty: ShaderProperty) {
+    when (shaderProperty) {
+        is ShaderProperty.FloatProperty -> {
+            this.setFloatUniform(shaderProperty.name, shaderProperty.value)
+        }
+
+        is ShaderProperty.Float2Property -> {
+            this.setFloatUniform(shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB)
+        }
+
+        is ShaderProperty.Float3Property -> {
+            this.setFloatUniform(
+                shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB, shaderProperty.valueC
+            )
+        }
+
+        is ShaderProperty.ColorProperty -> {
+            this.setFloatUniform(
+                shaderProperty.name, shaderProperty.valueA, shaderProperty.valueB, shaderProperty.valueC
+            )
+        }
+
+        is ShaderProperty.Float4Property -> {
+            this.setFloatUniform(
+                shaderProperty.name,
+                shaderProperty.valueA,
+                shaderProperty.valueB,
+                shaderProperty.valueC,
+                shaderProperty.valueD
+            )
+        }
+
+        is ShaderProperty.ImageProperty -> {
+            this.setInputShader(shaderProperty.name, ImageShader(shaderProperty.image, TileMode.Decal, TileMode.Decal))
+            this.setFloatUniform(
+                "${shaderProperty.name}_resolution",
+                shaderProperty.image.width.toFloat(),
+                shaderProperty.image.height.toFloat()
+            )
         }
     }
 }

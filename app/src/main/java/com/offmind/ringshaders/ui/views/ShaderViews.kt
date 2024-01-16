@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.asFloatState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,24 +15,26 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.offmind.ringshaders.R
 import com.offmind.ringshaders.model.ShaderProperty
-import com.offmind.ringshaders.presenter.ScreenState
-import com.offmind.ringshaders.presenter.UserEvent
-import com.offmind.ringshaders.presenter.availableShadersList
-import com.offmind.ringshaders.ui.utils.ProduceDrawLoopCounter
+import com.offmind.ringshaders.presenter.data.ScreenState
+import com.offmind.ringshaders.presenter.data.UserEvent
+import com.offmind.ringshaders.utils.applyProperty
 
 @Composable
 fun CardWithShader(
     modifier: Modifier,
     state: ScreenState,
+    time: Float,
     onUserEvent: (UserEvent) -> Unit,
-    time: Float
+    content: @Composable (
+        state: ScreenState,
+        time: Float
+    ) -> Unit
 ) {
     ElevatedCard(
         modifier = modifier,
@@ -47,11 +48,29 @@ fun CardWithShader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(modifier = Modifier.padding(horizontal = 8.dp), text = state.shader?.name ?: "", fontSize = 19.sp)
-            ShadersDropdown(shadersList = availableShadersList) {
+            ShadersDropdown(shadersList = state.shaderList) {
                 onUserEvent.invoke(UserEvent.OnSelectNewShader(it))
             }
         }
-        ShaderContent(state = state, onUserEvent = onUserEvent, time = time)
+        Box(modifier = Modifier.weight(1f)) {
+            content(state, time)
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp, vertical = 15.dp),
+            ) {
+                IconButton(onClick = {
+                    onUserEvent.invoke(UserEvent.OnClickExpand)
+                }) {
+                    Icon(
+                        modifier = Modifier.size(30.dp),
+                        painter = painterResource(id = if (state.isExpanded) R.drawable.collapse_icon else R.drawable.expand_icon),
+                        contentDescription = "expand",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
         TextWithLinks(
             modifier = Modifier.padding(10.dp), text = state.shader?.description ?: ""
         )
@@ -59,14 +78,12 @@ fun CardWithShader(
 }
 
 @Composable
-fun ColumnScope.ShaderContent(
+fun ShaderContent(
     state: ScreenState,
-    time: Float,
-    onUserEvent: (UserEvent) -> Unit,
+    time: Float
 ) {
     Box(
         modifier = Modifier
-            .weight(1f)
             .fillMaxWidth()
             .padding(horizontal = 7.dp)
             .clipToBounds(),
@@ -95,20 +112,6 @@ fun ColumnScope.ShaderContent(
             modifier = Modifier.size(150.dp), contentAlignment = Alignment.Center
         ) {
             Text("Loading", color = Color.White, fontWeight = FontWeight.W400, fontSize = 20.sp)
-        }
-        Row(
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 15.dp),
-        ) {
-            IconButton(onClick = {
-                onUserEvent.invoke(UserEvent.OnClickExpand)
-            }) {
-                Icon(
-                    modifier = Modifier.size(30.dp),
-                    painter = painterResource(id = if(state.isExpanded) R.drawable.collapse_icon else R.drawable.expand_icon),
-                    contentDescription = "expand")
-            }
         }
     }
 }
