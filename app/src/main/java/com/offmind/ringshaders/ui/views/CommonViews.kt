@@ -58,24 +58,13 @@ fun BackgroundDimSlider(
 @Composable
 fun ShaderOptions(
     modifier: Modifier,
-    state: ScreenState,
-    onUserEvent: (UserEvent) -> Unit,
     properties: List<ShaderProperty>,
     onPropertyChanged: (String, List<Float>) -> Unit
 ) {
+    println("HUI shader options calles, properties: $properties")
     LazyColumn(
         modifier = modifier.padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(15.dp)
     ) {
-        item {
-            BackgroundDimSlider(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                value = state.backgroundDim,
-                changeBackgroundDim = {
-                    onUserEvent.invoke(UserEvent.OnChangeBackgroundDim(it))
-                }
-            )
-        }
         properties.forEach {
             item {
                 if (it is ShaderProperty.FloatProperty) {

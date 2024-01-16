@@ -8,18 +8,22 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.asFloatState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.offmind.ringshaders.presenter.LoadingIndicatorsViewModel
+import com.offmind.ringshaders.presenter.TogglesViewModel
 import com.offmind.ringshaders.presenter.data.ScreenState
+import com.offmind.ringshaders.presenter.data.ShaderChangeEvent
+import com.offmind.ringshaders.presenter.data.ShaderState
 import com.offmind.ringshaders.presenter.data.UserEvent
 import com.offmind.ringshaders.ui.utils.ProduceDrawLoopCounter
 import com.offmind.ringshaders.ui.views.CardWithShader
 import com.offmind.ringshaders.ui.views.ShaderContent
 import com.offmind.ringshaders.ui.views.ShaderOptions
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ShaderScreen(
@@ -36,20 +40,19 @@ fun ShaderScreen(
 
     if (state.isExpanded) {
         Column(modifier = Modifier.fillMaxSize()) {
-            ShaderContent(state = state, time = time.floatValue)
+       //     ShaderContent(state = state, time = time.floatValue)
         }
     } else {
         Surface(modifier = Modifier.fillMaxSize()) {
             if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 ScreenPortrait(
-                    time = time.floatValue,
+                    time = time,
                     state = state,
                     onUserEvent = onUserEvent,
                 )
             } else {
                 ScreenLandscape(
-                    time = time.floatValue,
-                    state = state,
+                    time = time,
                     onUserEvent = onUserEvent,
                 )
             }
@@ -60,59 +63,63 @@ fun ShaderScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScreenPortrait(
-    time: Float,
+    time:   State<Float>,
     state: ScreenState,
     onUserEvent: (UserEvent) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp)
-    ) {
-        val pagerState = rememberPagerState(pageCount = {
-            3
-        })
-        HorizontalPager(
-            modifier = Modifier.weight(1f),
-            pageSpacing = 15.dp,
-            state = pagerState
-        ) { page ->
-            CardWithShader(
-                modifier = Modifier.fillMaxSize(),
-                state = state,
-                onUserEvent = onUserEvent,
-                time = time,
-                content = { state, time ->
-                    ShaderContent(state = state, time = time)
-                }
-            )
-        }
-        ShaderOptions(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 150.dp, max = 250.dp)
-                .graphicsLayer {
-                    alpha = 1 - 2 * pagerState.currentPageOffsetFraction
-                },
-            properties = state.shaderProperties,
-            state = state,
-            onUserEvent = onUserEvent
-        ) { key, value ->
-            onUserEvent.invoke(UserEvent.OnShaderPropertyChanged(key, value))
-        }
-    }
+    /* Column(
+         modifier = Modifier
+             .fillMaxSize()
+             .padding(horizontal = 20.dp)
+     ) {
+         val pagerState = rememberPagerState(pageCount = {
+             3
+         })
+         HorizontalPager(
+             modifier = Modifier.weight(1f),
+             pageSpacing = 15.dp,
+             state = pagerState
+         ) { page ->
+             CardWithShader(
+                 modifier = Modifier.fillMaxSize(),
+                 state = state,
+                 onUserEvent = onUserEvent,
+                 time = time,
+                 content = { state, time ->
+                     ShaderContent(state = state, time = time)
+                 }
+             )
+         }
+         ShaderOptions(
+             modifier = Modifier
+                 .fillMaxWidth()
+                 .heightIn(min = 150.dp, max = 250.dp)
+                 .graphicsLayer {
+                     alpha = 1 - 2 * pagerState.currentPageOffsetFraction
+                 },
+             properties = state.shaderProperties,
+             state = state,
+             onUserEvent = onUserEvent
+         ) { key, value ->
+             onUserEvent.invoke(UserEvent.OnShaderPropertyChanged(key, value))
+         }
+     }*/
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScreenLandscape(
-    time: Float,
-    state: ScreenState,
+    time: State<Float>,
     onUserEvent: (UserEvent) -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = {
-        10
+        3
     })
+
+    var shaderState: MutableState<ShaderState?> = remember {
+        mutableStateOf(value = null)
+    }
+    var shaderEvent: ((ShaderChangeEvent) -> Unit)? = null
 
     Row(modifier = Modifier.fillMaxSize()) {
         Column(Modifier.weight(0.5f)) {
@@ -123,11 +130,9 @@ fun ScreenLandscape(
                     }
                     .padding(horizontal = 20.dp, vertical = 5.dp)
                     .height(300.dp),
-                properties = state.shaderProperties,
-                state = state,
-                onUserEvent = onUserEvent
+                properties = shaderState.value?.shaderProperties ?: emptyList()
             ) { key, value ->
-                onUserEvent.invoke(UserEvent.OnShaderPropertyChanged(key, value))
+                shaderEvent?.invoke(ShaderChangeEvent.OnShaderPropertyChanged(key, value))
             }
         }
         Spacer(modifier = Modifier.width(10.dp))
@@ -136,15 +141,44 @@ fun ScreenLandscape(
             pageSpacing = 15.dp,
             state = pagerState
         ) { page ->
-            CardWithShader(
-                modifier = Modifier
-                    .fillMaxSize(),
-                state = state,
-                onUserEvent = onUserEvent,
-                time = time,
-                content = { state, time ->
-                    ShaderContent(state = state, time = time)
-                })
+            when (page) {
+                0 -> {
+                    val vm: LoadingIndicatorsViewModel = koinViewModel()
+                    vm.getShaderState().collectAsState().value.let {
+                        CardWithShader(
+                            modifier = Modifier.fillMaxSize(),
+                            state = it,
+                            onUserEvent = onUserEvent,
+                            onShaderChangeEvent = vm::onShaderEvent,
+                            time = time.value,
+                            content = { state, time ->
+                                ShaderContent(state = state, time = time)
+                            })
+                    }
+                    if(page == pagerState.currentPage) {
+                        shaderState.value = vm.getShaderState().collectAsState().value
+                        shaderEvent = vm::onShaderEvent
+                    }
+                }
+                1 -> {
+                    val vm: TogglesViewModel = koinViewModel()
+                    vm.getShaderState().collectAsState().value.let {
+                        CardWithShader(
+                            modifier = Modifier.fillMaxSize(),
+                            state = it,
+                            onUserEvent = onUserEvent,
+                            onShaderChangeEvent = vm::onShaderEvent,
+                            time = time.value,
+                            content = { state, time ->
+                                ShaderContent(state = state, time = time)
+                            })
+                    }
+                    if (page == pagerState.currentPage) {
+                        shaderState.value = vm.getShaderState().collectAsState().value
+                        shaderEvent = vm::onShaderEvent
+                    }
+                }
+            }
         }
     }
 }

@@ -3,7 +3,9 @@ package com.offmind.ringshaders.di
 import com.offmind.ringshaders.domain.LoadImageBitmapUseCase
 import com.offmind.ringshaders.domain.LoadShaderCodeUseCase
 import com.offmind.ringshaders.domain.LoadShadersListUseCase
-import com.offmind.ringshaders.presenter.ShaderViewModel
+import com.offmind.ringshaders.presenter.AppViewModel
+import com.offmind.ringshaders.presenter.LoadingIndicatorsViewModel
+import com.offmind.ringshaders.presenter.TogglesViewModel
 import com.offmind.ringshaders.repository.audio.AudioToTextureProcessor
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -16,5 +18,7 @@ val appModule = module {
 
     single { AudioToTextureProcessor(androidContext()) }
 
-    viewModel { ShaderViewModel(get(), get(), get()) }
+    viewModel { LoadingIndicatorsViewModel(get(), get(), get()) }
+    viewModel { TogglesViewModel(get(), get(), get()) }
+    viewModel { AppViewModel() }
 }

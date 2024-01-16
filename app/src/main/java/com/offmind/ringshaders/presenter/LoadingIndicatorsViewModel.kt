@@ -7,57 +7,37 @@ import com.offmind.ringshaders.domain.LoadShaderCodeUseCase
 import com.offmind.ringshaders.domain.LoadShadersListUseCase
 import com.offmind.ringshaders.domain.LoadedShader
 import com.offmind.ringshaders.model.ShaderProperty
-import com.offmind.ringshaders.presenter.data.ScreenState
-import com.offmind.ringshaders.presenter.data.UserEvent
+import com.offmind.ringshaders.presenter.data.ShaderChangeEvent
+import com.offmind.ringshaders.presenter.data.ShaderState
 import com.offmind.ringshaders.utils.toShaderProperties
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ShaderViewModel(
+class LoadingIndicatorsViewModel(
     loadShadersListUseCase: LoadShadersListUseCase,
     private val loadImageFromAssetBitmap: LoadImageBitmapUseCase,
     private val loadShaderCodeUseCase: LoadShaderCodeUseCase
-) : ViewModel() {
+) : ViewModel(), ShadersViewModel {
 
-    private val _screenState: MutableStateFlow<ScreenState> = MutableStateFlow(ScreenState())
-    val screenState: StateFlow<ScreenState> = _screenState
+    private val _shaderState: MutableStateFlow<ShaderState> = MutableStateFlow(ShaderState())
+    private val shaderState: StateFlow<ShaderState> = _shaderState
 
     init {
         viewModelScope.launch {
             loadShadersListUseCase.execute().let {
                 if (it.isNotEmpty()) {
-                    _screenState.emit(screenState.value.copy(shaderList = it))
+                    _shaderState.emit(shaderState.value.copy(shaderList = it))
                     loadNewShader(it.first())
                 }
             }
         }
     }
 
-    fun onUserEvent(userEvent: UserEvent) {
-        when (userEvent) {
-            is UserEvent.OnChangeBackgroundDim -> {
-                setBackgroundDim(userEvent.newValue)
-            }
-
-            is UserEvent.OnSelectNewShader -> {
-                loadNewShader(userEvent.newShader)
-            }
-
-            is UserEvent.OnShaderPropertyChanged -> {
-                onShaderPropertyChanged(userEvent.key, userEvent.newValue)
-            }
-
-            is UserEvent.OnClickExpand -> {
-                _screenState.value = _screenState.value.copy(isExpanded = !_screenState.value.isExpanded)
-            }
-        }
-    }
-
     private fun loadNewShader(loadedShader: LoadedShader) {
         viewModelScope.launch {
-            _screenState.emit(
-                screenState.value.copy(
+            _shaderState.emit(
+                shaderState.value.copy(
                     shader = loadedShader,
                     shaderProperties = loadedShader.properties.toShaderProperties(loadImageFromAssetBitmap),
                     compiledShader = loadShaderCodeUseCase.execute(loadedShader.file),
@@ -66,17 +46,13 @@ class ShaderViewModel(
         }
     }
 
-    private fun setBackgroundDim(newValue: Float) {
-        _screenState.value = _screenState.value.copy(backgroundDim = newValue)
-    }
-
     private fun onShaderPropertyChanged(
         propertyName: String,
         newValue: List<Float> = emptyList(),
         newStringValue: String = ""
     ) {
         viewModelScope.launch {
-            val properties = _screenState.value.shaderProperties.toMutableList()
+            val properties = _shaderState.value.shaderProperties.toMutableList()
             val propertyIndex = properties.indexOfFirst { it.name == propertyName }
             if (propertyIndex != -1) {
                 val updatedProperty = when (val property = properties[propertyIndex]) {
@@ -109,10 +85,23 @@ class ShaderViewModel(
                 }
 
                 properties[propertyIndex] = updatedProperty
-                _screenState.emit(_screenState.value.copy(shaderProperties = properties))
+                _shaderState.emit(_shaderState.value.copy(shaderProperties = properties))
+            }
+        }
+    }
+
+    override fun getShaderState(): StateFlow<ShaderState> = shaderState
+
+    override fun onShaderEvent(shaderEvent: ShaderChangeEvent) {
+        when (shaderEvent) {
+
+            is ShaderChangeEvent.OnSelectNewShader -> {
+                loadNewShader(shaderEvent.newShader)
+            }
+
+            is ShaderChangeEvent.OnShaderPropertyChanged -> {
+                onShaderPropertyChanged(shaderEvent.key, shaderEvent.newValue)
             }
         }
     }
 }
-
-

@@ -21,18 +21,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.offmind.ringshaders.R
 import com.offmind.ringshaders.model.ShaderProperty
-import com.offmind.ringshaders.presenter.data.ScreenState
+import com.offmind.ringshaders.presenter.data.ShaderChangeEvent
+import com.offmind.ringshaders.presenter.data.ShaderState
 import com.offmind.ringshaders.presenter.data.UserEvent
 import com.offmind.ringshaders.utils.applyProperty
 
 @Composable
 fun CardWithShader(
     modifier: Modifier,
-    state: ScreenState,
+    state: ShaderState,
     time: Float,
     onUserEvent: (UserEvent) -> Unit,
+    onShaderChangeEvent: (ShaderChangeEvent) -> Unit,
     content: @Composable (
-        state: ScreenState,
+        state: ShaderState,
         time: Float
     ) -> Unit
 ) {
@@ -49,7 +51,7 @@ fun CardWithShader(
         ) {
             Text(modifier = Modifier.padding(horizontal = 8.dp), text = state.shader?.name ?: "", fontSize = 19.sp)
             ShadersDropdown(shadersList = state.shaderList) {
-                onUserEvent.invoke(UserEvent.OnSelectNewShader(it))
+                onShaderChangeEvent.invoke(ShaderChangeEvent.OnSelectNewShader(it))
             }
         }
         Box(modifier = Modifier.weight(1f)) {
@@ -64,7 +66,7 @@ fun CardWithShader(
                 }) {
                     Icon(
                         modifier = Modifier.size(30.dp),
-                        painter = painterResource(id = if (state.isExpanded) R.drawable.collapse_icon else R.drawable.expand_icon),
+                        painter = painterResource(id = R.drawable.expand_icon),
                         contentDescription = "expand",
                         tint = Color.White
                     )
@@ -79,7 +81,7 @@ fun CardWithShader(
 
 @Composable
 fun ShaderContent(
-    state: ScreenState,
+    state: ShaderState,
     time: Float
 ) {
     Box(
